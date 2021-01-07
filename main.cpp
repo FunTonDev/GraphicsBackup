@@ -28,14 +28,14 @@ bronzeMat(MaterialType::Bronze), rubberMat(MaterialType::Rubber), tinMat(Materia
 
 //Uniform vars
 GLuint projLoc, viewLoc, viewPosLoc, posLoc, rotLoc, scaLoc; //MODEL
-GLuint globalAmbLoc, currLightAmbLoc, currLightDiffLoc, currLightSpecLoc, currLightPosLoc, //LIGHT
-currLightDirLoc, currLightCutoffLoc, currLightExponentLoc, currLightIntensityLoc,
+GLuint globalAmbLoc, lightAmbLoc, lightDiffLoc, lightSpecLoc, lightPosLoc, //LIGHT
+lightDirLoc, lightCutoffLoc, lightExponentLoc, lightIntensityLoc,
 posLightCountLoc, spotLightCountLoc;
-GLuint mShiLoc, mAmbLoc, mDiffLoc, mSpecLoc;		//MATERIAL
+GLuint matShiLoc, matAmbLoc, matDiffLoc, matSpecLoc;		//MATERIAL
 GLuint lightPMatLoc, lightVMatLoc; //SHADOW
 
 //Render vars
-glm::mat4 pMat, vMat;
+glm::mat4 pMat, vMat, lightVMat, lightPMat;
 
 //Entities
 Camera userCam(glm::vec3(0.0f, 0.2f, 6.0f));//(12, -3.0f, -20)
@@ -49,7 +49,6 @@ GLuint skybox;
 
 //Shadows
 GLuint shadowTex, shadowBuffer;
-glm::mat4 lightVMat, lightPMat;
 
 //==========================================================================================================================================
 //|                                                                                                                                        |
@@ -248,7 +247,6 @@ void Init()
 	//------------------------------------------------------------
 	glGenVertexArrays(1, vao);
 	glBindVertexArray(vao[0]);
-
 	glGenBuffers(cubemapSpace + spawnedEntities.size() * bufferSpacing, vbo);
 
 	Entity cube("models/Cube.obj");		//CUBEMAP
@@ -277,12 +275,8 @@ void Init()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
-
-	/*glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-	glEnable(GL_CULL_FACE);
-	glEnable(GL_BLEND);
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LEQUAL);*/
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 }
 
 void Display(double currentTime)
@@ -385,7 +379,8 @@ void ShadowPass1()
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadowTex, 0);
 
 	glDrawBuffer(GL_NONE);
-
+	
+	//CLEARS SHADOW ACNE
 	glEnable(GL_POLYGON_OFFSET_FILL);
 	glPolygonOffset(4.0f, 4.0f);
 
@@ -395,7 +390,7 @@ void ShadowPass1()
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 
-	//UNIFORM LOCATION
+	//UNIFORM LOCATIONS
 	/*posLoc = glGetUniformLocation(shadowProgram, "u_posVec");
 	rotLoc = glGetUniformLocation(shadowProgram, "u_rotVec");
 	scaLoc = glGetUniformLocation(shadowProgram, "u_scaVec");
